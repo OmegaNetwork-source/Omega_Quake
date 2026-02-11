@@ -1,25 +1,47 @@
-# omega-quake
+# Omega Quake
 
-A port of Quake to Three.js.
+A modernized WebGL port of Quake built with Three.js, featuring Web3 integration on the Omega Network.
 
-### Play
+## Features
 
-https://mrdoob.github.io/three-quake/
+- **Wallet Integration**: Connect via MetaMask to track your progress and identity.
+- **On-chain Leaderboard**: High scores (monster kills and frags) are automatically submitted to the Omega Network via a smart contract.
+- **Full Game Support**: Enhanced asset loading for both shareware and registered versions (`pak0.pak` and `pak1.pak`).
+- **Enhanced Main Menu**: Integrated leaderboard viewing directly from the in-game menu.
+- **WebXR (VR) Support**: Experience Quake in virtual reality directly in your browser.
 
-### Dev Log
+## Getting Started
 
-https://x.com/mrdoob/status/2015076521531355583
+### Prerequisites
+- MetaMask installed in your browser.
+- A local web server (e.g., `http-server`) to host the files.
 
-### Assets
+### Network Configuration
+Omega Quake runs on the **Omega Network**:
+- **Chain ID**: 1313161916
+- **RPC**: https://0x4e4542bc.rpc.aurora-cloud.dev
+- **Explorer**: https://0x4e4542bc.explorer.aurora-cloud.dev
 
-Shareware `pak0.pak` included (Episode 1).  
-For the full game, replace with your own `pak0.pak` from a registered copy of Quake.
+## Smart Contract
+The leaderboard is managed by the `OmegaLeaderboard` smart contract:
+- **Address**: `0x3b8FaC84F93bc0949aAC12eceEB91247bFdd2959`
+- **Source**: Available in the `contracts/` directory.
 
-### License
+## Assets
+- **Shareware**: `pak0.pak` is included (Episode 1: Doomed Dimension).
+- **Full Version**: Place your registered `pak1.pak` in the root directory to unlock all Episodes (2-4) and additional maps.
 
-Code: GPL v2
+## Development
 
-### Credits
+Run the game locally:
+```bash
+npx http-server . -p 8080 -c-1
+```
 
-- Original game by id Software ([source](https://github.com/id-Software/Quake))
-- Three.js port by [@mrdoob](https://github.com/mrdoob) with [@claude](https://github.com/claude)
+## Credits
+- Original game by **id Software**.
+- Three.js port by **@mrdoob** and **@claude**.
+- Omega Network integration and enhancements by **Antigravity**.
+
+## License
+Code is licensed under **GPL v2**.
