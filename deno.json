@@ -1,0 +1,9 @@
+{
+	"imports": {
+		"three": "./server/browser_shim.js",
+		"three/addons/renderers/CSS3DRenderer.js": "./server/browser_shim.js"
+	},
+	"tasks": {
+		"server": "deno run --allow-net --allow-read --unstable-net game_server.js"
+	}
+}
