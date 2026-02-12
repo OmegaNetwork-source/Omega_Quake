@@ -1,9 +1,45 @@
+// Network configurations for Omega and Somnia
+const NETWORK_CONFIGS = {
+    omega: {
+        chainId: '0x4e4542bc', // 1313161916
+        chainName: 'Omega Network',
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        rpcUrls: ['https://0x4e4542bc.rpc.aurora-cloud.dev'],
+        blockExplorerUrls: ['https://0x4e4542bc.explorer.aurora-cloud.dev'],
+        contractAddress: '0x3b8FaC84F93bc0949aAC12eceEB91247bFdd2959',
+    },
+    somnia: {
+        chainId: '0x13a7', // 5031 in hex
+        chainName: 'Somnia',
+        nativeCurrency: { name: 'SOMI', symbol: 'SOMI', decimals: 18 },
+        rpcUrls: ['https://api.infra.mainnet.somnia.network', 'https://somnia.publicnode.com'],
+        blockExplorerUrls: ['https://explorer.somnia.network'],
+        contractAddress: '0x3b8FaC84F93bc0949aAC12eceEB91247bFdd2959',
+    }
+};
+
 export class WalletManager {
     constructor() {
         this.provider = null;
         this.signer = null;
         this.address = null;
         this.isConnected = false;
+        this.selectedNetwork = 'omega'; // 'omega' | 'somnia'
+    }
+
+    setSelectedNetwork(networkKey) {
+        if (networkKey === 'omega' || networkKey === 'somnia') {
+            this.selectedNetwork = networkKey;
+            this.updateUI();
+        }
+    }
+
+    getContractAddress() {
+        return NETWORK_CONFIGS[this.selectedNetwork].contractAddress;
+    }
+
+    getNetworkConfig() {
+        return NETWORK_CONFIGS[this.selectedNetwork];
     }
 
     async connect() {
@@ -14,52 +50,51 @@ export class WalletManager {
         }
 
         try {
-            // First, check/switch to Omega Network
-            await this.checkNetwork();
+            await this.checkNetwork(this.selectedNetwork);
 
-            // Request account access
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-            // Initialize provider (using the global ethers object from the script tag)
             this.provider = new ethers.BrowserProvider(window.ethereum);
             this.signer = await this.provider.getSigner();
             this.address = accounts[0];
             this.isConnected = true;
 
-            console.log('Wallet connected:', this.address);
+            console.log('Wallet connected:', this.address, 'on', this.getNetworkConfig().chainName);
             this.updateUI();
 
-            // Auto-fetch leaderboard on connect
             this.fetchLeaderboard();
 
             return true;
         } catch (error) {
             console.error('User denied account access or error occurred:', error);
+            const msg = error?.message || String(error);
+            if (error?.code === 4001) {
+                alert('Connection was rejected. Please approve the request in your wallet.');
+            } else {
+                alert('Failed to connect: ' + msg);
+            }
             return false;
         }
     }
 
-    async checkNetwork() {
-        const chainId = '0x4e4542bc'; // 1313161916 in hex
+    async checkNetwork(networkKey) {
+        const config = NETWORK_CONFIGS[networkKey];
+        if (!config) return;
+
         const networkParams = {
-            chainId: chainId,
-            chainName: 'Omega Network',
-            nativeCurrency: {
-                name: 'Ether',
-                symbol: 'ETH', // Often ETH on Aurora chains, change if different
-                decimals: 18
-            },
-            rpcUrls: ['https://0x4e4542bc.rpc.aurora-cloud.dev'],
-            blockExplorerUrls: ['https://0x4e4542bc.explorer.aurora-cloud.dev']
+            chainId: config.chainId,
+            chainName: config.chainName,
+            nativeCurrency: config.nativeCurrency,
+            rpcUrls: config.rpcUrls,
+            blockExplorerUrls: config.blockExplorerUrls
         };
 
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: chainId }],
+                params: [{ chainId: config.chainId }],
             });
         } catch (switchError) {
-            // This error code 4902 indicates that the chain has not been added to MetaMask.
             if (switchError.code === 4902) {
                 try {
                     await window.ethereum.request({
@@ -67,12 +102,17 @@ export class WalletManager {
                         params: [networkParams],
                     });
                 } catch (addError) {
-                    console.error('Failed to add Omega Network:', addError);
-                    alert('Could not add Omega Network to MetaMask. Please add it manually.');
+                    console.error('Failed to add ' + config.chainName + ':', addError);
+                    if (addError.code === 4001) {
+                        throw new Error('You rejected adding ' + config.chainName + '. Please add the network to connect.');
+                    }
+                    alert('Could not add ' + config.chainName + ' to MetaMask. Please add it manually.');
+                    throw addError;
                 }
+            } else if (switchError.code === 4001) {
+                throw new Error('You rejected switching to ' + config.chainName + '. Please approve the network switch.');
             } else {
-                console.error('Failed to switch to Omega Network:', switchError);
-                // Allow proceeding if already on correct network or user manually switches
+                console.error('Failed to switch to ' + config.chainName + ':', switchError);
             }
         }
     }
@@ -89,6 +129,9 @@ export class WalletManager {
                 walletBtn.classList.remove('connected');
             }
         }
+        // Update leaderboard title
+        const title = document.getElementById('leaderboard-title');
+        if (title) title.textContent = this.getNetworkConfig().chainName + ' Leaderboard';
     }
 
     async submitScore(score) {
@@ -97,8 +140,7 @@ export class WalletManager {
             return;
         }
 
-        // Contract Address - REPLACE WITH YOUR DEPLOYED CONTRACT ADDRESS
-        const contractAddress = "0x3b8FaC84F93bc0949aAC12eceEB91247bFdd2959";
+        const contractAddress = this.getContractAddress();
 
         // Simple ABI for the submitScore function and events
         const abi = [
@@ -109,9 +151,9 @@ export class WalletManager {
 
         try {
             // Check if contract address is valid
-            if (!ethers.isAddress(contractAddress) || contractAddress === "YOUR_CONTRACT_ADDRESS_HERE") {
+            if (!ethers.isAddress(contractAddress) || contractAddress === "0x0000000000000000000000000000000000000000") {
                 console.warn("Contract address not set or invalid. Saving locally/simulating.");
-                alert(`Contract not configured correctly.\n\nSimulating score submission: ${score}`);
+                alert(`Leaderboard contract not deployed on ${this.getNetworkConfig().chainName} yet.\n\nSimulating score submission: ${score}`);
                 return;
             }
 
@@ -138,53 +180,91 @@ export class WalletManager {
     }
 
     async fetchLeaderboard() {
-        if (!this.isConnected || !this.provider) return;
+        const list = document.getElementById('scores-list');
+        const modal = document.getElementById('leaderboard-modal');
 
-        const contractAddress = "0x3b8FaC84F93bc0949aAC12eceEB91247bFdd2959";
+        const showError = (msg) => {
+            if (list) list.innerHTML = '<div class="score-entry"><span>' + msg + '</span></div>';
+            if (modal) modal.style.display = 'block';
+        };
+
+        if (!this.isConnected || !this.provider) {
+            showError('Connect wallet to view leaderboard');
+            return;
+        }
+
+        const contractAddress = this.getContractAddress();
+        if (!ethers.isAddress(contractAddress) || contractAddress === "0x0000000000000000000000000000000000000000") {
+            showError('Leaderboard not deployed on ' + this.getNetworkConfig().chainName);
+            return;
+        }
+
+        // Show loading
+        if (list) list.innerHTML = '<div class="score-entry"><span>Loading...</span></div>';
+        if (modal) modal.style.display = 'block';
+
         const abi = [
             "event ScoreSubmitted(address indexed player, uint256 score, uint256 timestamp)"
         ];
 
         try {
             const contract = new ethers.Contract(contractAddress, abi, this.provider);
-
-            // Query all ScoreSubmitted events
-            // Note: In production, you might want to limit the block range
             const filter = contract.filters.ScoreSubmitted();
-            const events = await contract.queryFilter(filter);
+            let events;
+
+            if (this.selectedNetwork === 'somnia') {
+                // Somnia RPC limits getLogs to 1000 blocks - use small chunked lookback (last 5k blocks = 6 requests)
+                const config = this.getNetworkConfig();
+                const readProvider = new ethers.JsonRpcProvider(config.rpcUrls[0]);
+                const currentBlock = await readProvider.getBlockNumber();
+                const chunkSize = 999;
+                const lookbackBlocks = 5000; // Last 5k blocks - fast, ~6 requests
+                const fromBlock = Math.max(0, currentBlock - lookbackBlocks);
+                const topic = ethers.id("ScoreSubmitted(address,uint256,uint256)");
+                const allLogs = [];
+                for (let from = fromBlock; from <= currentBlock; from += chunkSize) {
+                    const to = Math.min(from + chunkSize - 1, currentBlock);
+                    const logs = await readProvider.getLogs({
+                        address: contractAddress,
+                        topics: [topic],
+                        fromBlock: from,
+                        toBlock: to
+                    });
+                    allLogs.push(...logs);
+                }
+                events = allLogs.map(log => {
+                    const parsed = contract.interface.parseLog({ topics: log.topics, data: log.data });
+                    return parsed ? { args: parsed.args } : null;
+                }).filter(Boolean);
+            } else {
+                // Omega - same simple approach that works
+                events = await contract.queryFilter(filter);
+            }
 
             // Process events to find high scores per player
             const highScores = {};
-
             events.forEach(event => {
                 const player = event.args[0];
-                const score = Number(event.args[1]); // Ensure number
-
+                const score = Number(event.args[1]);
                 if (!highScores[player] || score > highScores[player]) {
                     highScores[player] = score;
                 }
             });
 
-            // Convert to array and sort
             const sortedScores = Object.entries(highScores)
                 .map(([player, score]) => ({ player, score }))
                 .sort((a, b) => b.score - a.score)
-                .slice(0, 10); // Top 10
+                .slice(0, 10);
 
-            // Update UI
-            const list = document.getElementById('scores-list');
             if (list) {
-                list.innerHTML = ''; // Clear loading/dummy
-
+                list.innerHTML = '';
                 if (sortedScores.length === 0) {
                     list.innerHTML = '<div class="score-entry"><span>No scores yet</span></div>';
                 }
-
                 sortedScores.forEach((entry, index) => {
                     const shortAddr = `${entry.player.substring(0, 6)}...${entry.player.substring(38)}`;
                     const div = document.createElement('div');
                     div.className = 'score-entry';
-                    // Highlight current player
                     if (entry.player.toLowerCase() === this.address.toLowerCase()) {
                         div.style.color = '#fff';
                         div.style.textShadow = '0 0 5px #d8a956';
@@ -194,12 +274,9 @@ export class WalletManager {
                 });
             }
 
-            // Show modal if hidden
-            const modal = document.getElementById('leaderboard-modal');
-            if (modal) modal.style.display = 'block';
-
         } catch (error) {
             console.error("Failed to fetch leaderboard", error);
+            showError('Failed to load: ' + (error.message || String(error)));
         }
     }
 }

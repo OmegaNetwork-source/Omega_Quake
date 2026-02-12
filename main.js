@@ -30,20 +30,63 @@ async function main() {
 
 		// Wallet UI setup
 		const walletBtn = document.getElementById('wallet-connect-btn');
+		const networkChoiceModal = document.getElementById('network-choice-modal');
 		if (walletBtn) {
-			walletBtn.addEventListener('click', async () => {
-				// Don't propagate clicks to the canvas (prevents firing weapon when clicking UI)
+			walletBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
 				if (!walletManager.isConnected) {
-					await walletManager.connect();
+					networkChoiceModal.style.display = 'block';
 				} else {
-					// Show leaderboard if connected
 					document.getElementById('leaderboard-modal').style.display = 'block';
 					walletManager.fetchLeaderboard();
 				}
 			});
 		}
 
-		// Prevent clicks on modal from propagating to game
+		// Prevent wallet area clicks from reaching game
+		const walletArea = document.getElementById('wallet-area');
+		if (walletArea) {
+			walletArea.addEventListener('mousedown', (e) => e.stopPropagation());
+			walletArea.addEventListener('click', (e) => e.stopPropagation());
+		}
+
+		// Network choice modal - Connect to Omega
+		const connectOmega = document.getElementById('connect-omega');
+		if (connectOmega) {
+			connectOmega.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				networkChoiceModal.style.display = 'none';
+				walletManager.setSelectedNetwork('omega');
+				await walletManager.connect();
+			});
+		}
+
+		// Network choice modal - Connect to Somnia
+		const connectSomnia = document.getElementById('connect-somnia');
+		if (connectSomnia) {
+			connectSomnia.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				networkChoiceModal.style.display = 'none';
+				walletManager.setSelectedNetwork('somnia');
+				await walletManager.connect();
+			});
+		}
+
+		// Network choice modal - Cancel
+		const networkChoiceCancel = document.getElementById('network-choice-cancel');
+		if (networkChoiceCancel) {
+			networkChoiceCancel.addEventListener('click', (e) => {
+				e.stopPropagation();
+				networkChoiceModal.style.display = 'none';
+			});
+		}
+
+		// Prevent modals from propagating to game
+		if (networkChoiceModal) {
+			networkChoiceModal.addEventListener('mousedown', (e) => e.stopPropagation());
+			networkChoiceModal.addEventListener('click', (e) => e.stopPropagation());
+		}
 		const modal = document.getElementById('leaderboard-modal');
 		if (modal) {
 			modal.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -55,15 +98,12 @@ async function main() {
 		const loadingOverlay = document.getElementById('loading');
 
 		function setProgress(value) {
-
 			if (loadingProgress) {
-
 				loadingProgress.style.width = (value * 100) + '%';
-
 			}
-
 		}
 
+		setProgress(0);
 		// Load pak0.pak from the same directory
 		Sys_Printf('Loading pak0.pak...\\n');
 		const pak0 = await COM_FetchPak('pak0.pak', 'pak0.pak', setProgress);
@@ -174,10 +214,12 @@ async function main() {
 		});
 
 	} catch (e) {
-
 		console.error('Omega Quake Fatal Error:', e);
+		const loadingOverlay = document.getElementById('loading');
+		if (loadingOverlay) {
+			loadingOverlay.innerHTML = '<div style="padding:20px;text-align:center;color:#d8a956;">Failed to load: ' + (e.message || e) + '<br><br>Make sure you run a local server (e.g. npx http-server . -p 8080)</div>';
+		}
 		Sys_Error(e.message);
-
 	}
 
 }
