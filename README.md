@@ -34,14 +34,14 @@ The leaderboard uses the `OmegaLeaderboard` contract (`contracts/OmegaLeaderboar
 - **Shareware**: `pak0.pak` is included (Episode 1: Doomed Dimension).
 - **Full Version**: Place your registered `pak1.pak` in the root directory to unlock all Episodes (2-4) and additional maps.
 
-## Multiplayer server (Railway)
+## Multiplayer server
 
-Matchmaking and multiplayer require a WebTransport server. To run it on [Railway](https://railway.app):
+Matchmaking uses **WebTransport over QUIC (UDP)**. Railway only supports TCP, so **multiplayer does not work on Railway** (“Opening handshake failed”). Use a host that supports **UDP**:
 
-1. Deploy using `Dockerfile.server` and enable **TCP Proxy** on port `4433`.
-2. Set the game client default server in `src/menu.js` (`DEFAULT_WT_SERVER`) to your Railway TCP URL.
+- **Fly.io** – supports UDP; deploy with the same `Dockerfile.server`.
+- **VPS** (DigitalOcean, Linode, etc.) – expose UDP port 4433, TLS cert for your domain, set `DEFAULT_WT_SERVER` in `src/menu.js`.
 
-See **[RAILWAY.md](RAILWAY.md)** for the full step-by-step guide.
+See **[RAILWAY.md](RAILWAY.md)** for build details and Fly.io/VPS options.
 
 ## Development
 

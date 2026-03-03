@@ -1,6 +1,9 @@
 # Deploy Omega Quake multiplayer server on Railway
 
-This guide gets the **WebTransport game/lobby server** running on Railway so matchmaking (room list, create, join) works again. Your frontend stays on Vercel; only the game server runs on Railway.
+> **Important:** The game server uses **WebTransport over QUIC (UDP)**. Railway’s proxy is **TCP-only** and does not support inbound UDP, so **multiplayer will not work on Railway** — you’ll see “Opening handshake failed.”  
+> For multiplayer, use a host that supports **UDP** (e.g. **Fly.io**, or a **VPS** like DigitalOcean/Linode). See [Deploying multiplayer elsewhere](#if-railway-doesnt-work-use-flyio-or-a-vps) below.
+
+This guide describes how to run the server on Railway (e.g. for testing the build). For working multiplayer, use Fly.io or a VPS.
 
 ## What you need
 
@@ -129,6 +132,25 @@ For a proper certificate (no browser warning):
 
 - **Port mismatch**  
   - Server reads `PORT` from the environment (default 4433). Set `PORT=4433` in Railway and set TCP Proxy internal port to `4433` so they match.
+
+- **“Opening handshake failed” in the game**  
+  - The server uses **QUIC (UDP)**. Railway does **not** support inbound UDP, so the handshake never completes. Use [Fly.io or a VPS](#if-railway-doesnt-work-use-flyio-or-a-vps) instead.
+
+---
+
+## If Railway doesn’t work: use Fly.io or a VPS
+
+WebTransport/QUIC needs **UDP**. Railway only proxies TCP, so multiplayer will not work there.
+
+**Option A: Fly.io**  
+Fly.io allows UDP. Create an app, set an internal UDP port (e.g. 4433), and use the same `Dockerfile.server` and env (e.g. `CERT_PEM`/`KEY_PEM` if you use a custom domain). Expose the app with `fly proxy` or a public IP and set `DEFAULT_WT_SERVER` in the game to `https://<your-fly-app-host>:<port>`.
+
+**Option B: VPS (DigitalOcean, Linode, etc.)**  
+1. Create a small VM (e.g. Ubuntu).  
+2. Install Docker, clone the repo, build with `Dockerfile.server`, run the container with port 4433 (UDP) exposed.  
+3. Point a domain (e.g. `wt.omeganetwork.co`) to the VPS IP.  
+4. Use Let’s Encrypt (e.g. `certbot certonly --standalone -d wt.omeganetwork.co`) and pass the cert/key to the server via env or files.  
+5. Set `DEFAULT_WT_SERVER` in the game to `https://wt.omeganetwork.co:4433` (or your chosen port).
 
 ---
 
