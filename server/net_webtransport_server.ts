@@ -4,6 +4,8 @@
 import { Sys_Printf } from './sys_server.ts';
 import { net_message } from '../src/net.js';
 
+export { net_message };
+
 // Server configuration
 let serverPort = 4433;
 let certFile = 'cert.pem';
