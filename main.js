@@ -178,7 +178,7 @@ async function main() {
 
 		if (roomId) {
 
-			const serverUrl = urlParams.get('server') || 'https://trolley.proxy.rlwy.net:14469';
+			const serverUrl = urlParams.get('server') || 'https://wts.mrdoob.com:4433';
 			const connectUrl = serverUrl + '?room=' + encodeURIComponent(roomId);
 			Sys_Printf('Auto-joining room: %s\\n', roomId);
 			Cbuf_AddText('connect "' + connectUrl + '"\n');

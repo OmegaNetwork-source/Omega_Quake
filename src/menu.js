@@ -70,7 +70,7 @@ let lanConfig_cursor = 0;
 let lanConfig_joinname = ''; // Room code or full URL (max 64 chars)
 
 // Default WebTransport server (can be overridden by URL param)
-const DEFAULT_WT_SERVER = 'https://trolley.proxy.rlwy.net:14469';
+const DEFAULT_WT_SERVER = 'https://wts.mrdoob.com:4433';
 
 // Room list state
 let slist_rooms = []; // Array of {id, name, map, playerCount, maxPlayers}
