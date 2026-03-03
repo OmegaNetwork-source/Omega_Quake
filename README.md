@@ -41,7 +41,7 @@ Matchmaking uses **WebTransport over QUIC (UDP)**. Railway only supports TCP, so
 - **Fly.io** – supports UDP; deploy with the same `Dockerfile.server`.
 - **VPS** (DigitalOcean, Linode, etc.) – expose UDP port 4433, TLS cert for your domain, set `DEFAULT_WT_SERVER` in `src/menu.js`.
 
-See **[RAILWAY.md](RAILWAY.md)** for build details and Fly.io/VPS options.
+See **[MULTIPLAYER_HOSTING.md](MULTIPLAYER_HOSTING.md)** for free (Oracle Cloud) and paid (Fly.io, VPS) options.
 
 ## Development
 
