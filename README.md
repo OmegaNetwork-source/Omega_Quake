@@ -34,6 +34,15 @@ The leaderboard uses the `OmegaLeaderboard` contract (`contracts/OmegaLeaderboar
 - **Shareware**: `pak0.pak` is included (Episode 1: Doomed Dimension).
 - **Full Version**: Place your registered `pak1.pak` in the root directory to unlock all Episodes (2-4) and additional maps.
 
+## Multiplayer server (Railway)
+
+Matchmaking and multiplayer require a WebTransport server. To run it on [Railway](https://railway.app):
+
+1. Deploy using `Dockerfile.server` and enable **TCP Proxy** on port `4433`.
+2. Set the game client default server in `src/menu.js` (`DEFAULT_WT_SERVER`) to your Railway TCP URL.
+
+See **[RAILWAY.md](RAILWAY.md)** for the full step-by-step guide.
+
 ## Development
 
 Run the game locally:

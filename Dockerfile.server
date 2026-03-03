@@ -1,0 +1,21 @@
+# Omega Quake multiplayer server for Railway (WebTransport/QUIC)
+# Build: docker build -f Dockerfile.server -t omega-quake-server .
+# Run:   docker run -p 4433:4433 -e PORT=4433 omega-quake-server
+
+FROM denoland/deno:2.0
+
+WORKDIR /app
+
+# Server code
+COPY server/ ./server/
+COPY src/ ./src/
+COPY pak0.pak ./
+
+# Default TLS cert (self-signed) so server starts without env; override with CERT_PEM/KEY_PEM in production
+RUN cd server && openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost" 2>/dev/null || true
+
+ENV PORT=4433
+EXPOSE 4433
+
+# Run from /app. PORT is read from env; -pak and -cert/-key point to paths under /app
+CMD ["sh", "-c", "deno run --allow-net --allow-read --allow-env --unstable-net -c server/deno.json server/main.ts -pak /app/pak0.pak -cert /app/server/cert.pem -key /app/server/key.pem"]

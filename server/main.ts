@@ -30,16 +30,16 @@ import {
 	type Room,
 } from './rooms.ts';
 
-// Server configuration
+// Server configuration (port/certs can come from env for Railway etc.)
 const CONFIG = {
-	pakPath: '../pak0.pak',
-	port: 4433,
+	pakPath: Deno.env.get('PAK_PATH') || '../pak0.pak',
+	port: parseInt(Deno.env.get('PORT') || '4433', 10),
 	certFile: 'cert.pem',
 	keyFile: 'key.pem',
-	tickRate: 72, // Server tick rate in Hz
+	tickRate: 72,
 	maxClients: 16,
 	defaultMap: 'start',
-	roomCleanupInterval: 60000, // Clean up stale rooms every 60s
+	roomCleanupInterval: 60000,
 };
 
 // Parse command line arguments
@@ -93,6 +93,23 @@ Example:
 
 
 /**
+ * Write cert/key from env to temp files (for Railway/cloud where files aren't mounted)
+ */
+async function setupCertsFromEnv(): Promise<void> {
+	const certPem = Deno.env.get('CERT_PEM');
+	const keyPem = Deno.env.get('KEY_PEM');
+	if (certPem && keyPem) {
+		const certPath = await Deno.makeTempFile({ prefix: 'cert-', suffix: '.pem' });
+		const keyPath = await Deno.makeTempFile({ prefix: 'key-', suffix: '.pem' });
+		await Deno.writeTextFile(certPath, certPem);
+		await Deno.writeTextFile(keyPath, keyPem);
+		CONFIG.certFile = certPath;
+		CONFIG.keyFile = keyPath;
+		Sys_Printf('Using TLS cert/key from CERT_PEM/KEY_PEM env\n');
+	}
+}
+
+/**
  * Initialize the server
  */
 async function initServer(): Promise<boolean> {
@@ -101,6 +118,8 @@ async function initServer(): Promise<boolean> {
 	Sys_Printf('Omega Quake Dedicated Server v1.0\n');
 	Sys_Printf('========================================\n');
 	Sys_Printf('\n');
+
+	await setupCertsFromEnv();
 
 	// Load PAK file
 	Sys_Printf('Loading game data...\n');
